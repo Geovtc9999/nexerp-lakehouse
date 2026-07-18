@@ -1,5 +1,7 @@
 .env
 .env.*
+.soda.env
+logs/
 __pycache__/
 *.pyc
 .soda/
