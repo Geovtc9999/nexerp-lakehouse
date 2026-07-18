@@ -1,0 +1,11 @@
+# Connexion Soda Core à la base source du Data Fabric (plateforme Bayon MDM).
+# Valeurs injectées par variables d'environnement (voir soda/README.md).
+# La base ET le schema s'appellent tous deux "nexerp".
+data_source nexerp:
+  type: postgres
+  host: ${PG_HOST}
+  port: ${PG_PORT}
+  username: ${PG_USER}
+  password: ${PG_PASSWORD}
+  database: ${PG_DB}
+  schema: nexerp

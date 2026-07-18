@@ -1,0 +1,128 @@
+# Checks qualité Soda Core — base source "nexerp" (plateforme Bayon MDM).
+# Écrits d'après le schéma réel (23 tables). Les tables actuellement VIDES
+# (team, team_member, project, project_member, project_file, integration,
+# skill_version) n'ont PAS de check row_count>0 pour éviter les faux échecs.
+# Les vues v_* sont exclues (dérivées).
+
+# ─────────────────────────────── Référentiels (doivent exister) ───────────────
+checks for organization:
+  - row_count > 0
+  - duplicate_count(id) = 0
+  - missing_count(id) = 0
+  - missing_count(name) = 0
+  - schema:
+      fail:
+        when required column missing: [id, name, created_at]
+
+checks for app_user:
+  - row_count > 0
+  - duplicate_count(id) = 0
+  - missing_count(id) = 0
+  - duplicate_count(email) = 0
+  - missing_count(email) = 0
+  - values in (org_id) must exist in organization (id)
+  - min(budget_monthly_eur) >= 0
+
+checks for perimeter:
+  - duplicate_count(id) = 0
+  - missing_count(id) = 0
+  - values in (org_id) must exist in organization (id)
+
+checks for user_perimeter:
+  - values in (user_id) must exist in app_user (id)
+  - values in (perimeter_id) must exist in perimeter (id)
+
+# ─────────────────────────────── Agents / skills ──────────────────────────────
+checks for agent:
+  - row_count > 0
+  - duplicate_count(id) = 0
+  - missing_count(id) = 0
+  - missing_count(name) = 0
+  - values in (org_id) must exist in organization (id)
+  - min(budget_monthly_eur) >= 0
+
+checks for skill:
+  - row_count > 0
+  - duplicate_count(id) = 0
+  - missing_count(id) = 0
+  - values in (org_id) must exist in organization (id)
+  - min(install_count) >= 0
+
+checks for agent_skill:
+  - values in (agent_id) must exist in agent (id)
+  - values in (skill_id) must exist in skill (id)
+
+# ─────────────────────────────── Threads / messages ───────────────────────────
+checks for thread:
+  - row_count > 0
+  - duplicate_count(id) = 0
+  - missing_count(id) = 0
+  - values in (org_id) must exist in organization (id)
+  - values in (user_id) must exist in app_user (id)
+  - min(cost_eur) >= 0
+  - min(tokens) >= 0
+  - invalid_count(confidence) = 0:
+      valid min: 0
+      valid max: 1
+
+checks for message:
+  - row_count > 0
+  - duplicate_count(id) = 0
+  - missing_count(id) = 0
+  - values in (thread_id) must exist in thread (id)
+  - invalid_count(confidence) = 0:
+      valid min: 0
+      valid max: 1
+
+# ─────────────────────────────── Knowledge ────────────────────────────────────
+checks for knowledge_source:
+  - row_count > 0
+  - duplicate_count(id) = 0
+  - missing_count(id) = 0
+  - values in (org_id) must exist in organization (id)
+
+checks for knowledge_chunk:
+  - row_count > 0
+  - duplicate_count(id) = 0
+  - missing_count(id) = 0
+  - missing_count(content) = 0
+  - values in (source_id) must exist in knowledge_source (id)
+
+# ─────────────────────────────── Mémoire / livrables ──────────────────────────
+checks for memory:
+  - duplicate_count(id) = 0
+  - missing_count(id) = 0
+  - values in (agent_id) must exist in agent (id)
+
+checks for deliverable:
+  - duplicate_count(id) = 0
+  - missing_count(id) = 0
+  - values in (thread_id) must exist in thread (id)
+
+# ─────────────────────────────── Coûts / usage ────────────────────────────────
+checks for usage_ledger:
+  - duplicate_count(id) = 0
+  - missing_count(id) = 0
+  - values in (org_id) must exist in organization (id)
+  - min(tokens) >= 0
+  - min(cost_eur) >= 0
+
+# ─────────────────────────────── Audit (anti-falsification) ───────────────────
+checks for audit_log:
+  - duplicate_count(id) = 0
+  - missing_count(id) = 0
+  - missing_count(hash) = 0
+  - duplicate_count(hash) = 0
+  - invalid_count(confidence) = 0:
+      valid min: 0
+      valid max: 1
+  # Chaîne de hash : chaque ligne (sauf la 1re) doit chaîner le hash précédent.
+  - hash_chain_breaks = 0:
+      hash_chain_breaks query: |
+        SELECT count(*) FROM (
+          SELECT previous_hash,
+                 lag(hash) OVER (ORDER BY occurred_at, id) AS prev_expected,
+                 row_number() OVER (ORDER BY occurred_at, id) AS rn
+          FROM nexerp.audit_log
+        ) s
+        WHERE rn > 1 AND previous_hash IS DISTINCT FROM prev_expected

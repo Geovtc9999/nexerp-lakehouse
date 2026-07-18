@@ -1,0 +1,54 @@
+# Runners cognitifs du Data Fabric — exécution à la demande (restart: no).
+# Corrigé vs runbook : réseau réel = coolify (external), base source = nexerp,
+# mots de passe via .env (jamais en dur). Le code est monté depuis ce repo.
+networks:
+  coolify:
+    external: true
+
+services:
+  soda-runner:
+    image: python:3.12-slim
+    container_name: fabric-soda-runner
+    restart: "no"
+    networks: [coolify]
+    working_dir: /sodacl
+    environment:
+      - PG_HOST=ysprg0oqzl86voh0kv0u6b6q
+      - PG_PORT=5432
+      - PG_DB=nexerp
+      - PG_USER=fabric_app
+      - PG_PASSWORD=${PG_FABRIC_SOURCE_PASSWORD}
+    volumes:
+      - ./soda:/sodacl
+    command:
+      - sh
+      - -c
+      - "pip install -q soda-core-postgres==3.3.* && soda scan -d nexerp -c configuration.yml checks.yml"
+    deploy:
+      resources:
+        limits: { memory: 512m, cpus: '0.5' }
+    labels:
+      - com.nexerp.service=soda-runner
+      - com.nexerp.tier=cognitive
+
+  splink-runner:
+    image: python:3.12-slim
+    container_name: fabric-splink-runner
+    restart: "no"
+    networks: [coolify]
+    working_dir: /app
+    environment:
+      - PG_HOST=ysprg0oqzl86voh0kv0u6b6q
+      - PG_PORT=5432
+      - PG_DB=nexerp
+      - PG_USER=fabric_app
+      - PG_PASSWORD=${PG_FABRIC_SOURCE_PASSWORD}
+    volumes:
+      - ./splink:/app
+    command: ["sh", "-c", "pip install -q 'psycopg[binary]' && python splink_runner.py"]
+    deploy:
+      resources:
+        limits: { memory: 1g, cpus: '1.0' }
+    labels:
+      - com.nexerp.service=splink-runner
+      - com.nexerp.tier=cognitive
