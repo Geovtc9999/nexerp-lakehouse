@@ -7,7 +7,7 @@ networks:
 
 services:
   soda-runner:
-    image: python:3.12-slim
+    image: python:3.11-slim  # soda-core 3.3 incompatible Python 3.12 (distutils supprimé)
     container_name: fabric-soda-runner
     restart: "no"
     networks: [coolify]
@@ -32,7 +32,7 @@ services:
       - com.nexerp.tier=cognitive
 
   splink-runner:
-    image: python:3.12-slim
+    image: python:3.11-slim  # soda-core 3.3 incompatible Python 3.12 (distutils supprimé)
     container_name: fabric-splink-runner
     restart: "no"
     networks: [coolify]

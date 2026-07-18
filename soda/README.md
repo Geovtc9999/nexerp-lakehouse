@@ -18,10 +18,11 @@ docker run --rm \
   -e PG_USER=fabric_app \
   -e PG_PASSWORD='<PG_FABRIC_SOURCE_PASSWORD>' \
   -e PG_DB=nexerp \
-  python:3.12-slim \
+  python:3.11-slim \
   sh -c "pip install -q soda-core-postgres==3.3.* && \
          soda scan -d nexerp -c /sodacl/configuration.yml /sodacl/checks.yml"
 ```
+> ⚠️ Image **python:3.11**-slim (pas 3.12) : soda-core 3.3 importe `distutils`, supprimé en 3.12.
 > Le mot de passe `fabric_app` (source) est dans Infisical `/fabric/postgres/`.
 > Ne jamais le mettre en dur dans le repo.
 
